@@ -1,0 +1,236 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Configuración global (clave/valor) ──────────────────────────────
+model Setting {
+  key   String @id
+  value String
+}
+
+// ─── Buzón de envío ──────────────────────────────────────────────────
+model Mailbox {
+  id                 String    @id @default(cuid())
+  email              String    @unique
+  displayName        String
+  provider           String    @default("SMTP") // GMAIL | M365 | SMTP
+  smtpHost           String
+  smtpPort           Int       @default(465)
+  smtpSecure         Boolean   @default(true)
+  smtpUser           String
+  smtpPass           String
+  imapHost           String
+  imapPort           Int       @default(993)
+  imapSecure         Boolean   @default(true)
+  imapUser           String
+  imapPass           String
+  verified           Boolean   @default(false)
+  status             String    @default("WARMUP") // WARMUP | ACTIVE | PAUSED | ERROR
+  campaignDailyLimit Int       @default(20)
+  warmupStart        Int       @default(3)
+  warmupMax          Int       @default(25)
+  warmupRamp         Int       @default(2)
+  warmupStartedAt    DateTime  @default(now())
+  penaltyUntil       DateTime?
+  counterDate        String    @default("")
+  sentWarmupToday    Int       @default(0)
+  sentCampaignToday  Int       @default(0)
+  consecutiveErrors  Int       @default(0)
+  lastError          String?
+  lastImapSync       DateTime?
+  createdAt          DateTime  @default(now())
+  sends              Send[]
+  enrollments        Enrollment[]
+  inboxMessages      InboxMessage[]
+}
+
+// ─── Registro de decisiones y acciones del agente IA ─────────────────
+model AgentEvent {
+  id        String   @id @default(cuid())
+  level     String   @default("INFO") // INFO | ACTION | SUCCESS | WARN | ERROR
+  type      String   // CLASSIFY | ACTION | GUARD | REPORT | NOTIFY | SYSTEM
+  message   String
+  meta      String?  // JSON con detalle
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+// ─── Notificaciones enviadas (Telegram / WhatsApp) ───────────────────
+model Notification {
+  id        String   @id @default(cuid())
+  channel   String   // TELEGRAM | WHATSAPP
+  event     String   // reply | hot | bounce | error | daily | test
+  title     String
+  body      String
+  status    String   @default("SENT") // SENT | FAILED | SKIPPED
+  error     String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+// ─── Lead (prospecto) — CRM ──────────────────────────────────────────
+model Lead {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  name            String?
+  company         String?
+  position        String?
+  status          String    @default("NEW") // NEW | ACTIVE | REPLIED | BOUNCED | UNSUBSCRIBED | PAUSED
+  temperature     String    @default("COLD") // HOT | WARM | COLD (según el agente IA)
+  temperatureAt   DateTime?
+  aiNotes         String?
+  // ─── Pipeline CRM (catalogación) ───
+  stage           String    @default("NUEVO") // NUEVO | CONTACTADO | CALIENTE | TIBIO | FRIO | RECHAZADO | RECUPERADO
+  stageAt         DateTime  @default(now()) // cuándo entró en la etapa actual
+  score           Int       @default(0) // puntos de engagement (abre +5, clic +10, responde +25)
+  openCount       Int       @default(0)
+  lastOpenedAt    DateTime?
+  reengagedCount  Int       @default(0) // veces re-activado por el agente
+  lastReengageAt  DateTime?
+  currentAngle    String?   // nombre del enfoque usado en el último contacto
+  tags            String?   // etiquetas separadas por coma (p.ej. saas,latam)
+  source          String    @default("manual")
+  unsubToken      String    @unique
+  lastContactedAt DateTime?
+  createdAt       DateTime  @default(now())
+  enrollments     Enrollment[]
+  sends           Send[]
+  events          LeadEvent[]
+}
+
+// ─── Timeline CRM del lead (historial completo) ─────────────────────
+model LeadEvent {
+  id        String   @id @default(cuid())
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  type      String   // STAGE | SENT | OPEN | REPLY | BOUNCE | REENGAGE | ANGLE | PROMO | NOTE | AGENT | IMPORT
+  title     String
+  detail    String?
+  createdAt DateTime @default(now())
+
+  @@index([leadId, createdAt])
+  @@index([type, createdAt])
+}
+
+// ─── Enfoque (ángulo) para cambiar de estrategia con un lead ────────
+model Angle {
+  id          String  @id @default(cuid())
+  name        String  @unique
+  description String  @default("")
+  subject     String
+  body        String
+  active      Boolean @default(true)
+  createdAt   DateTime @default(now())
+}
+
+// ─── Regla de re-engagement automático ──────────────────────────────
+model ReEngageRule {
+  id              String    @id @default(cuid())
+  key             String    @unique // OPENS_NO_REPLY | COLD_DAYS | NO_OPEN
+  name            String
+  trigger         String    // OPENS_NO_REPLY | COLD_DAYS | NO_OPEN
+  threshold       Int       @default(2) // aperturas o días según el trigger
+  action          String    @default("CHANGE_ANGLE") // RESEND | CHANGE_ANGLE | NEW_PROMO
+  promoCampaignId String?   // para NEW_PROMO: campaña/promoción donde meter el lead
+  enabled         Boolean   @default(true)
+  lastRunAt       DateTime?
+  firedCount      Int       @default(0)
+}
+
+// ─── Campaña ─────────────────────────────────────────────────────────
+model Campaign {
+  id          String       @id @default(cuid())
+  name        String
+  fromName    String
+  status      String       @default("DRAFT") // DRAFT | RUNNING | PAUSED | COMPLETED
+  dailyTarget Int          @default(200)
+  trackOpens  Boolean      @default(true)
+  steps       SequenceStep[]
+  enrollments Enrollment[]
+  createdAt   DateTime     @default(now())
+}
+
+// ─── Paso de secuencia (email inicial + follow-ups) ──────────────────
+model SequenceStep {
+  id         String   @id @default(cuid())
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  stepNumber Int
+  delayDays  Int      @default(0)
+  subject    String
+  body       String
+}
+
+// ─── Inscripción lead→campaña con buzón asignado ─────────────────────
+model Enrollment {
+  id          String    @id @default(cuid())
+  campaignId  String
+  campaign    Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  leadId      String
+  lead        Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  mailboxId   String
+  mailbox     Mailbox   @relation(fields: [mailboxId], references: [id], onDelete: Cascade)
+  currentStep Int       @default(0)
+  status      String    @default("QUEUED") // QUEUED | IN_PROGRESS | REPLIED | FINISHED | BOUNCED
+  nextSendAt  DateTime?
+  lastSentAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@unique([campaignId, leadId])
+}
+
+// ─── Envío (warmup o campaña) ────────────────────────────────────────
+model Send {
+  id         String    @id @default(cuid())
+  kind       String // WARMUP | CAMPAIGN
+  mailboxId  String
+  mailbox    Mailbox   @relation(fields: [mailboxId], references: [id], onDelete: Cascade)
+  partnerId  String?
+  campaignId String?
+  leadId     String?
+  lead       Lead?     @relation(fields: [leadId], references: [id])
+  stepNumber Int?
+  toEmail    String
+  subject    String
+  messageId  String?
+  status     String    @default("SENT") // SENT | FAILED | BOUNCED
+  error      String?
+  openedAt   DateTime?
+  sentAt     DateTime  @default(now())
+
+  @@index([sentAt])
+  @@index([kind, sentAt])
+}
+
+// ─── Bandeja unificada (IMAP) ────────────────────────────────────────
+model InboxMessage {
+  id         String   @id @default(cuid())
+  mailboxId  String
+  mailbox    Mailbox  @relation(fields: [mailboxId], references: [id], onDelete: Cascade)
+  fromEmail  String
+  subject    String
+  body       String
+  messageId  String
+  isReply    Boolean  @default(false)
+  isBounce   Boolean  @default(false)
+  read       Boolean  @default(false)
+  // ─── Análisis del agente IA ───
+  temperature String?   // HOT | WARM | COLD | OOO
+  aiIntent    String?   // intención detectada (precio, demo, baja, info...)
+  aiSummary   String?   // resumen corto del mensaje
+  aiReply     String?   // borrador de respuesta sugerido por el agente
+  classified  Boolean   @default(false)
+  actedAt     DateTime? // cuando el agente/usuario actuó sobre el mensaje
+  repliedAt   DateTime? // cuando se envió la respuesta
+  receivedAt DateTime
+  createdAt  DateTime @default(now())
+
+  @@index([classified, isReply])
+}

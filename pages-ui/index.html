@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ALICE — Ecosistema de Cold Email</title>
+<meta name="description" content="Panel de control del ecosistema autónomo ALICE: CRM de leads, agentes IA, warmup y envío — vive en tu VM Oracle, se controla desde aquí.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230e151f'/%3E%3Cpath d='M8 22V10l8 7 8-7v12' stroke='%2310b981' stroke-width='2.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- ══════════ SIDEBAR ══════════ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-logo">A</div>
+      <div class="brand-text">
+        <strong>ALICE</strong>
+        <span>Ecosistema autónomo</span>
+      </div>
+    </div>
+
+    <div class="conn-pill" id="connPill">
+      <span class="dot"></span><span id="connText">Sin conectar</span>
+    </div>
+
+    <nav class="nav">
+      <p class="nav-group">Operación</p>
+      <a href="#/panel" data-view="panel" class="active">◫ Panel</a>
+      <a href="#/crm" data-view="crm">🔥 CRM de leads</a>
+      <a href="#/agentes" data-view="agentes">🤖 Agente IA</a>
+      <a href="#/buzones" data-view="buzones">📮 Buzones</a>
+      <a href="#/promos" data-view="promos">📣 Promociones</a>
+      <p class="nav-group">Control remoto</p>
+      <a href="#/comandos" data-view="comandos">⌘ Consola</a>
+      <a href="#/importar" data-view="importar">📥 Importar leads</a>
+      <p class="nav-group">Sistema</p>
+      <a href="#/config" data-view="config">⚙️ Configuración</a>
+    </nav>
+
+    <div class="sidebar-foot">
+      <div class="quota-mini">
+        <span id="footQuotaText">— / — hoy</span>
+        <div class="bar"><div id="footQuotaBar" class="bar-fill" style="width:0%"></div></div>
+      </div>
+      <span class="ver">ALICE v3.1 · VM Oracle ARM</span>
+    </div>
+  </aside>
+
+  <!-- ══════════ MAIN ══════════ -->
+  <main class="main">
+    <header class="topbar">
+      <button class="hamburger" id="hamburger" aria-label="Menú">☰</button>
+      <h1 id="viewTitle">Panel</h1>
+      <div class="topbar-right">
+        <span class="badge badge-dark" id="lastUpdate">esperando datos…</span>
+        <button class="btn btn-ghost" id="btnRefresh" title="Actualizar ahora">⟳</button>
+      </div>
+    </header>
+
+    <div class="content" id="content">
+      <!-- Las vistas se renderizan aquí -->
+    </div>
+  </main>
+</div>
+
+<!-- ══════════ MODAL CONEXIÓN ══════════ -->
+<div class="modal-backdrop hidden" id="modalConn">
+  <div class="modal">
+    <h2>Conectar con el ecosistema</h2>
+    <p class="muted">El dashboard lee el estado desde el repositorio privado <code>alice-data</code>. Necesitas un token de GitHub con permiso de lectura/escritura sobre ese repo.</p>
+    <label>Repositorio de datos
+      <input id="cfgRepo" type="text" placeholder="eddyflores100-lang/alice-data">
+    </label>
+    <label>Token de GitHub (fine-grained, solo <code>alice-data</code>)
+      <input id="cfgToken" type="password" placeholder="github_pat_… o ghp_…">
+    </label>
+    <label>Intervalo de actualización
+      <select id="cfgInterval">
+        <option value="30">30 segundos</option>
+        <option value="45" selected>45 segundos</option>
+        <option value="90">90 segundos</option>
+        <option value="180">3 minutos</option>
+      </select>
+    </label>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="cfgCancel">Cancelar</button>
+      <button class="btn btn-primary" id="cfgSave">Conectar</button>
+    </div>
+    <p class="hint" id="cfgTestResult"></p>
+  </div>
+</div>
+
+<!-- ══════════ TOAST ══════════ -->
+<div id="toast" class="toast hidden"></div>
+
+<script src="assets/app.js"></script>
+</body>
+</html>
