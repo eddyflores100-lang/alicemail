@@ -84,7 +84,7 @@ export function Inbox({ refreshKey, onChanged }: { refreshKey: number; onChanged
   const filters: { id: Filter; label: string }[] = [
     { id: 'all', label: 'Todo' },
     { id: 'unclassified', label: `Sin clasificar${data?.unclassifiedCount ? ` (${data.unclassifiedCount})` : ''}` },
-    { id: 'hot', label: '🔥 Calientes' },
+    { id: 'hot', label: 'Calientes' },
     { id: 'drafts', label: 'Borradores' },
   ]
 
@@ -98,7 +98,7 @@ export function Inbox({ refreshKey, onChanged }: { refreshKey: number; onChanged
               size="sm"
               variant={filter === f.id ? 'default' : 'outline'}
               onClick={() => setFilter(f.id)}
-              className={filter === f.id ? 'bg-emerald-600 hover:bg-emerald-700' : ''}
+              className={filter === f.id ? '' : ''}
             >
               {f.label}
             </Button>
@@ -203,7 +203,7 @@ export function Inbox({ refreshKey, onChanged }: { refreshKey: number; onChanged
                               />
                               {!m.repliedAt && (
                                 <div className="flex justify-end">
-                                  <Button size="sm" onClick={() => sendReply(m)} disabled={sending === m.id} className="bg-emerald-600 hover:bg-emerald-700">
+                                  <Button size="sm" onClick={() => sendReply(m)} disabled={sending === m.id} className="">
                                     {sending === m.id ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Send className="h-3.5 w-3.5 mr-1" />}
                                     Enviar respuesta
                                   </Button>

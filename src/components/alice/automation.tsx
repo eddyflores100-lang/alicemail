@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Loader2, Plus, RefreshCw, Compass, Target, Repeat, ArrowRightLeft, Trash2, Zap } from 'lucide-react'
 import {
   api, RuleDTO, AngleDTO, CampaignDTO,
-  RULE_ACTION_LABEL, RULE_TRIGGER_LABEL, RULE_ACTION_ICON,
+  RULE_ACTION_LABEL, RULE_TRIGGER_LABEL,
 } from './types'
 import { toast } from 'sonner'
 
@@ -115,7 +115,7 @@ export function Automation({ refreshKey }: { refreshKey: number }) {
                       <SelectTrigger className="h-9 w-full"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {Object.entries(RULE_ACTION_LABEL).map(([k, v]) => (
-                          <SelectItem key={k} value={k}>{RULE_ACTION_ICON[k]} {v}</SelectItem>
+                          <SelectItem key={k} value={k}>{v}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -159,7 +159,7 @@ export function Automation({ refreshKey }: { refreshKey: number }) {
           </div>
           <Dialog open={newOpen} onOpenChange={setNewOpen}>
             <DialogTrigger asChild>
-              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700">
+              <Button size="sm" className="">
                 <Plus className="h-3.5 w-3.5 mr-1" /> Nuevo enfoque
               </Button>
             </DialogTrigger>
@@ -287,7 +287,7 @@ function AngleDialog({ onDone }: { onDone: () => void }) {
             placeholder={'Hola {{nombre}},\n\nVi que {{empresa}}…'}
           />
         </div>
-        <Button onClick={submit} disabled={loading || !form.name || !form.subject || !form.body} className="w-full bg-emerald-600 hover:bg-emerald-700">
+        <Button onClick={submit} disabled={loading || !form.name || !form.subject || !form.body} className="w-full">
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Crear enfoque'}
         </Button>
       </div>

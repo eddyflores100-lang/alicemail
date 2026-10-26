@@ -11,13 +11,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Separator } from '@/components/ui/separator'
-import {
-  Loader2, Send, Eye, Reply, AlertTriangle, RefreshCw, Compass, Target,
-  ArrowRightLeft, StickyNote, Bot, Upload, Flame, Thermometer, Zap, Megaphone, MessageSquare,
-} from 'lucide-react'
+import { Loader2, Send, Eye, Reply, AlertTriangle, RefreshCw, Compass, Target, ArrowRightLeft, StickyNote, Bot, Upload, Flame, Thermometer, Zap, Megaphone, MessageSquare, Repeat } from 'lucide-react'
 import {
   api, LeadDetailDTO, AngleDTO, CampaignDTO,
-  STAGE_ORDER, STAGE_LABEL_V3, TEMP_LABEL, TEMP_BADGE, RULE_ACTION_ICON,
+  STAGE_ORDER, STAGE_LABEL_V3, TEMP_LABEL, TEMP_BADGE,
 } from './types'
 import { toast } from 'sonner'
 
@@ -38,7 +35,7 @@ const EVENT_ICON: Record<string, React.ReactNode> = {
 const EVENT_COLOR: Record<string, string> = {
   STAGE: 'bg-violet-100 text-violet-600',
   SENT: 'bg-slate-100 text-slate-500',
-  OPEN: 'bg-sky-100 text-sky-600',
+  OPEN: 'bg-teal-100 text-teal-700',
   REPLY: 'bg-teal-100 text-teal-600',
   BOUNCE: 'bg-amber-100 text-amber-600',
   REENGAGE: 'bg-emerald-100 text-emerald-600',
@@ -193,14 +190,14 @@ export function LeadDetailSheet({ leadId, onClose, onChanged }: { leadId: string
         {/* Acciones de re-engagement */}
         <div className="grid grid-cols-1 gap-2">
           <Button variant="outline" className="justify-start" disabled={!!busy} onClick={() => doAction({ action: 'resend' }, 'resend')}>
-            {busy === 'resend' ? <Loader2 className="h-4 w-4 animate-spin" /> : <span>{RULE_ACTION_ICON.RESEND}</span>}
+            {busy === 'resend' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Repeat className="h-4 w-4" />}
             Re-enviar ahora
           </Button>
           <Button variant="outline" className="justify-start" disabled={!!busy || angles.length === 0} onClick={() => setAngleDialog(true)}>
-            <span>{RULE_ACTION_ICON.CHANGE_ANGLE}</span> Cambiar de enfoque
+            <Compass className="h-4 w-4" /> Cambiar de enfoque
           </Button>
           <Button variant="outline" className="justify-start" disabled={!!busy || campaigns.length === 0} onClick={() => setPromoDialog(true)}>
-            <span>{RULE_ACTION_ICON.NEW_PROMO}</span> Meter en otra promoción
+            <Megaphone className="h-4 w-4" /> Meter en otra promoción
           </Button>
           {angles.length === 0 && (
             <p className="text-[11px] text-slate-400">Crea enfoques en la sección Automatización para cambiar de estrategia.</p>
@@ -287,7 +284,7 @@ export function LeadDetailSheet({ leadId, onClose, onChanged }: { leadId: string
               <SelectContent>
                 {angles.map((a) => (
                   <SelectItem key={a.id} value={a.id}>
-                    {RULE_ACTION_ICON.CHANGE_ANGLE} {a.name}
+                    <Compass className="h-3.5 w-3.5" /> {a.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -299,7 +296,7 @@ export function LeadDetailSheet({ leadId, onClose, onChanged }: { leadId: string
               </div>
             )}
             <Button
-              className="w-full bg-emerald-600 hover:bg-emerald-700"
+              className="w-full"
               disabled={!angleId || !!busy}
               onClick={async () => {
                 await doAction({ action: 'change_angle', angleId }, 'angle')
@@ -326,12 +323,12 @@ export function LeadDetailSheet({ leadId, onClose, onChanged }: { leadId: string
               <SelectTrigger><SelectValue placeholder="Elige una campaña en marcha…" /></SelectTrigger>
               <SelectContent>
                 {campaigns.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>{RULE_ACTION_ICON.NEW_PROMO} {c.name}</SelectItem>
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
             <Button
-              className="w-full bg-emerald-600 hover:bg-emerald-700"
+              className="w-full"
               disabled={!campaignId || !!busy}
               onClick={async () => {
                 await doAction({ action: 'add_promo', campaignId }, 'promo')

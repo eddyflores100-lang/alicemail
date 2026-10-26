@@ -141,7 +141,7 @@ export function Leads({ refreshKey, onChanged }: { refreshKey: number; onChanged
         </Dialog>
         <Dialog open={addOpen} onOpenChange={setAddOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-emerald-600 hover:bg-emerald-700">
+            <Button className="">
               <Plus className="h-4 w-4 mr-1" /> Añadir
             </Button>
           </DialogTrigger>
@@ -398,7 +398,7 @@ function ImportDialog({ onDone }: { onDone: () => void }) {
           placeholder={'maria.lopez@acme.com,Maria Lopez,Acme Inc,Directora\njgarcia@globex.es,Juan Garcia,Globex,CEO'}
           className="font-mono text-xs"
         />
-        <Button onClick={submit} disabled={loading || !csv.trim()} className="w-full bg-emerald-600 hover:bg-emerald-700">
+        <Button onClick={submit} disabled={loading || !csv.trim()} className="w-full">
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Importar'}
         </Button>
       </div>
@@ -433,7 +433,7 @@ function AddLeadDialog({ onDone }: { onDone: () => void }) {
             <Input value={form[f]} onChange={(e) => setForm({ ...form, [f]: e.target.value })} />
           </div>
         ))}
-        <Button onClick={submit} disabled={loading || !form.email} className="w-full bg-emerald-600 hover:bg-emerald-700">
+        <Button onClick={submit} disabled={loading || !form.email} className="w-full">
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Guardar'}
         </Button>
       </div>

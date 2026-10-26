@@ -1,7 +1,9 @@
 // Capa de correo: envío SMTP (nodemailer) y lectura IMAP (imapflow)
+// Las contraseñas llegan cifradas desde la BD; se descifran SOLO aquí, en memoria.
 import nodemailer from 'nodemailer'
 import { ImapFlow } from 'imapflow'
 import type { Mailbox } from '@prisma/client'
+import { decryptSecret } from '@/lib/crypto'
 
 const SMTP_TIMEOUT = 20_000
 
@@ -10,7 +12,7 @@ export function createTransport(mb: Pick<Mailbox, 'smtpHost' | 'smtpPort' | 'smt
     host: mb.smtpHost,
     port: mb.smtpPort,
     secure: mb.smtpSecure,
-    auth: { user: mb.smtpUser, pass: mb.smtpPass },
+    auth: { user: mb.smtpUser, pass: decryptSecret(mb.smtpPass) },
     connectionTimeout: SMTP_TIMEOUT,
     greetingTimeout: SMTP_TIMEOUT,
     socketTimeout: SMTP_TIMEOUT,
@@ -68,7 +70,7 @@ export async function testMailbox(mb: Mailbox): Promise<{
       host: mb.imapHost,
       port: mb.imapPort,
       secure: mb.imapSecure,
-      auth: { user: mb.imapUser, pass: mb.imapPass },
+      auth: { user: mb.imapUser, pass: decryptSecret(mb.imapPass) },
       logger: false,
       connectionTimeout: SMTP_TIMEOUT,
     })
@@ -116,7 +118,7 @@ export async function fetchImapMessages(
     host: mb.imapHost,
     port: mb.imapPort,
     secure: mb.imapSecure,
-    auth: { user: mb.imapUser, pass: mb.imapPass },
+    auth: { user: mb.imapUser, pass: decryptSecret(mb.imapPass) },
     logger: false,
     connectionTimeout: SMTP_TIMEOUT,
   })

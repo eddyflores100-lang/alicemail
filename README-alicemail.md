@@ -1,7 +1,27 @@
-# AliceMail v3.0 — CRM de leads + cold email + warmup + Agente IA
+# AliceMail v4.0 — CRM de correo en frío, profesional y cifrado
 
-Software a medida de **TechDigital · AliceLabs**. Inspira(d)o en los repos públicos de
-warmup/cold-email, pero mejorado y en español. Corre en tu VM de Oracle Cloud Always Free.
+Software a medida de **TechDigital · AliceLabs**. Interfaz profesional estilo CRM
+(navegación lateral, pipeline, bandeja, informes), motork de warmup, asistente de
+clasificación y re-engagement automático. Corre en tu VM de Oracle Cloud Always Free
+y se publica en tu dominio **alicelabs.space** vía Cloudflare Tunnel.
+
+## Nuevo en v4 — seguridad y diseño
+
+- **Diseño renovado**: shell profesional tipo CRM de referencia — barra lateral clara,
+  acento naranja, tablas y tarjetas sobrias, tipografía compacta. Nada de estética «gadget IA».
+- **Acceso con contraseña**: primer arranque pide crear la contraseña del administrador
+  (scrypt + cookie de sesión firmada httpOnly, válida 30 días). Todo el API queda protegido;
+  solo el píxel de apertura, las bajas y el MCP (con su Bearer) quedan públicos.
+- **Cifrado en reposo AES-256-GCM**: contraseñas de buzones, token de Telegram/WhatsApp,
+  clave del motor de clasificación y token MCP se guardan cifrados con `APP_ENCRYPTION_KEY`.
+  Nunca viajan al navegador (la API devuelve solo indicadores `has*`) y se descifran solo
+  en memoria cuando el motor envía/lee correo. Migración automática de valores antiguos.
+- **MCP endurecido**: token obligatorio para TODOS los métodos, comparación en tiempo
+  constante, límite 120 peticiones/min, rotación de token desde el panel y discovery GET
+  solo con sesión.
+- **Conexión alicelabs.space**: nueva sección «Conexión» con dominios del ecosistema
+  (`app.alicelabs.space` panel, `mail.alicelabs.space` tracking), checklist DNS y guía
+  de Cloudflare Tunnel sin abrir puertos (ver `docs/ALICELABS-SPACE.md`).
 
 ## Qué hace
 

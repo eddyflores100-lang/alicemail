@@ -1,6 +1,6 @@
 'use client'
 
-// Página Agente IA: control de autonomía, borradores, decisiones y guardianes
+// Página Asistente: control de autonomía, borradores, decisiones y guardianes
 import { useCallback, useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -11,7 +11,6 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import {
-  Bot,
   Loader2,
   Play,
   Flame,
@@ -22,6 +21,7 @@ import {
   Clock,
   RefreshCw,
   Inbox as InboxIcon,
+  Lock,
 } from 'lucide-react'
 import {
   api,
@@ -38,7 +38,7 @@ import { toast } from 'sonner'
 const AUTONOMY: Record<string, { label: string; desc: string }> = {
   OBSERVE: { label: 'Observar', desc: 'Clasifica y registra, no notifica ni responde' },
   ASSIST: { label: 'Asistir', desc: 'Clasifica, te notifica y deja borradores para aprobar' },
-  AUTO: { label: 'Autónomo', desc: 'Clasifica, notifica y responde solo a los leads calientes' },
+  AUTO: { label: 'Autónomo', desc: 'Clasifica, notifica y responde solo a los contactos calientes' },
 }
 
 export function Agent({ refreshKey, onChanged, onGoInbox }: { refreshKey: number; onChanged: () => void; onGoInbox: () => void }) {
@@ -49,6 +49,7 @@ export function Agent({ refreshKey, onChanged, onGoInbox }: { refreshKey: number
   const [sending, setSending] = useState<string | null>(null)
   const [running, setRunning] = useState(false)
   const [savingCfg, setSavingCfg] = useState(false)
+  const [newAiKey, setNewAiKey] = useState('')
 
   const load = useCallback(() => {
     api<AgentDTO>('/api/agent').then(setData).catch((e) => toast.error(e.message))
@@ -76,7 +77,7 @@ export function Agent({ refreshKey, onChanged, onGoInbox }: { refreshKey: number
       load()
       onChanged()
     } catch {
-      toast.error('El ciclo del agente falló')
+      toast.error('El ciclo del asistente falló')
     } finally {
       setRunning(false)
     }
@@ -86,8 +87,9 @@ export function Agent({ refreshKey, onChanged, onGoInbox }: { refreshKey: number
     if (!data) return
     setSavingCfg(true)
     try {
-      await api('/api/agent', { method: 'PATCH', body: JSON.stringify(data.settings) })
-      toast.success('Configuración del agente guardada')
+      await api('/api/agent', { method: 'PATCH', body: JSON.stringify({ ...data.settings, aiApiKey: newAiKey || undefined }) })
+      setNewAiKey('')
+      toast.success('Configuración guardada')
       load()
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Error')
@@ -112,7 +114,7 @@ export function Agent({ refreshKey, onChanged, onGoInbox }: { refreshKey: number
 
   if (!data) {
     return (
-      <div className="flex justify-center py-24 text-slate-400">
+      <div className="flex justify-center py-24 text-muted-foreground">
         <Loader2 className="h-6 w-6 animate-spin" />
       </div>
     )
@@ -122,20 +124,20 @@ export function Agent({ refreshKey, onChanged, onGoInbox }: { refreshKey: number
 
   return (
     <div className="space-y-5">
-      {/* Estado del agente */}
+      {/* Estado del asistente */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <Bot className="h-5 w-5 text-emerald-600" />
-            Agente IA
-            <Badge className={settings.agentEnabled ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100 ml-1' : 'bg-slate-100 text-slate-500 hover:bg-slate-100 ml-1'}>
+            <Sparkles className="h-5 w-5 text-primary" />
+            Asistente
+            <Badge className={settings.agentEnabled ? 'bg-chart-2/15 text-chart-2 hover:bg-chart-2/15 ml-1' : 'bg-muted text-muted-foreground hover:bg-muted ml-1'}>
               {settings.agentEnabled ? 'activo' : 'apagado'}
             </Badge>
             <span className="ml-auto flex gap-2">
               <Button size="sm" variant="outline" onClick={load} aria-label="Recargar">
                 <RefreshCw className="h-3.5 w-3.5" />
               </Button>
-              <Button size="sm" onClick={runNow} disabled={running} className="bg-emerald-600 hover:bg-emerald-700">
+              <Button size="sm" onClick={runNow} disabled={running}>
                 {running ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Play className="h-3.5 w-3.5 mr-1" />}
                 Ejecutar ciclo
               </Button>
@@ -144,16 +146,16 @@ export function Agent({ refreshKey, onChanged, onGoInbox }: { refreshKey: number
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <MiniStat icon={<InboxIcon className="h-3.5 w-3.5 text-slate-400" />} label="Sin clasificar" value={stats.pending} />
-            <MiniStat icon={<PenLine className="h-3.5 w-3.5 text-teal-500" />} label="Borradores listos" value={stats.drafts} />
-            <MiniStat icon={<Flame className="h-3.5 w-3.5 text-rose-500" />} label="Leads calientes" value={stats.hotLeads} />
-            <MiniStat icon={<Sparkles className="h-3.5 w-3.5 text-amber-500" />} label="Clasificados hoy" value={stats.classifiedToday} />
+            <MiniStat icon={<InboxIcon className="h-3.5 w-3.5 text-muted-foreground" />} label="Sin clasificar" value={stats.pending} />
+            <MiniStat icon={<PenLine className="h-3.5 w-3.5 text-chart-2" />} label="Borradores listos" value={stats.drafts} />
+            <MiniStat icon={<Flame className="h-3.5 w-3.5 text-primary" />} label="Contactos calientes" value={stats.hotLeads} />
+            <MiniStat icon={<Sparkles className="h-3.5 w-3.5 text-chart-3" />} label="Clasificados hoy" value={stats.classifiedToday} />
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3">
             <div>
-              <p className="text-sm font-medium">Agente activo</p>
-              <p className="text-xs text-slate-400">Ciclo automático cada ~90 s junto al motor de envío</p>
+              <p className="text-sm font-medium">Asistente activo</p>
+              <p className="text-xs text-muted-foreground">Ciclo automático cada ~90 s junto al motor de envío</p>
             </div>
             <Switch
               checked={settings.agentEnabled}
@@ -185,11 +187,11 @@ export function Agent({ refreshKey, onChanged, onGoInbox }: { refreshKey: number
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-slate-400">{AUTONOMY[settings.agentAutonomy]?.desc}</p>
+              <p className="text-xs text-muted-foreground">{AUTONOMY[settings.agentAutonomy]?.desc}</p>
             </div>
             <div className="space-y-1.5">
               <Label className="flex items-center gap-1.5">
-                <Clock className="h-3.5 w-3.5 text-slate-400" /> Hora del informe diario
+                <Clock className="h-3.5 w-3.5 text-muted-foreground" /> Hora del informe diario
               </Label>
               <Input
                 type="number"
@@ -198,12 +200,12 @@ export function Agent({ refreshKey, onChanged, onGoInbox }: { refreshKey: number
                 value={settings.dailyReportHour}
                 onChange={(e) => setData({ ...data, settings: { ...settings, dailyReportHour: parseInt(e.target.value || '9', 10) } })}
               />
-              <p className="text-xs text-slate-400">El agente te envía el resumen del día a Telegram/WhatsApp a partir de esta hora.</p>
+              <p className="text-xs text-muted-foreground">El asistente envía el resumen del día a Telegram/WhatsApp a partir de esta hora.</p>
             </div>
           </div>
 
           {stats.lastEvent && (
-            <p className="text-xs text-slate-500 border-l-2 border-emerald-300 pl-2.5">
+            <p className="text-xs text-muted-foreground border-l-2 border-primary/50 pl-2.5">
               Última decisión: {stats.lastEvent}
               {stats.lastEventAt && ` · ${new Date(stats.lastEventAt).toLocaleString('es', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}`}
             </p>
@@ -211,12 +213,12 @@ export function Agent({ refreshKey, onChanged, onGoInbox }: { refreshKey: number
 
           <Accordion type="single" collapsible>
             <AccordionItem value="motor">
-              <AccordionTrigger className="text-sm">Motor de IA (opcional — para tu VM de Oracle)</AccordionTrigger>
+              <AccordionTrigger className="text-sm">Motor de clasificación (opcional — para tu VM de Oracle)</AccordionTrigger>
               <AccordionContent className="space-y-3">
-                <p className="text-xs text-slate-500">
-                  En este entorno ya hay IA disponible. En tu VM, para que el agente use un LLM real, pon aquí un endpoint
-                  compatible con OpenAI (GLM, OpenAI, Groq, Ollama…). Sin configuración, el agente funciona con reglas
-                  heurísticas locales.
+                <p className="text-xs text-muted-foreground">
+                  En este entorno ya hay clasificación disponible. En tu VM, para usar un modelo externo, indica aquí un
+                  endpoint compatible con OpenAI (GLM, OpenAI, Groq, Ollama…). Sin configuración, el asistente funciona con
+                  reglas heurísticas locales.
                 </p>
                 <div className="grid gap-3 md:grid-cols-3">
                   <div className="space-y-1.5 md:col-span-2">
@@ -237,16 +239,21 @@ export function Agent({ refreshKey, onChanged, onGoInbox }: { refreshKey: number
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <Label>API key</Label>
+                  <Label className="flex items-center justify-between">
+                    Clave API
+                    <span className={`text-[10px] flex items-center gap-1 ${settings.hasAiApiKey ? 'text-chart-2' : 'text-muted-foreground'}`}>
+                      <Lock className="h-3 w-3" /> {settings.hasAiApiKey ? 'guardada y cifrada' : 'sin configurar'}
+                    </span>
+                  </Label>
                   <Input
                     type="password"
-                    value={settings.aiApiKey}
-                    onChange={(e) => setData({ ...data, settings: { ...settings, aiApiKey: e.target.value } })}
-                    placeholder="sk-…"
+                    value={newAiKey}
+                    onChange={(e) => setNewAiKey(e.target.value)}
+                    placeholder={settings.hasAiApiKey ? '•••••••• — deja vacío para conservar' : 'sk-…'}
                   />
                 </div>
-                <Button onClick={saveCfg} disabled={savingCfg} size="sm" className="bg-emerald-600 hover:bg-emerald-700">
-                  {savingCfg ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Guardar motor IA'}
+                <Button onClick={saveCfg} disabled={savingCfg} size="sm">
+                  {savingCfg ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Guardar motor de clasificación'}
                 </Button>
               </AccordionContent>
             </AccordionItem>
@@ -258,13 +265,13 @@ export function Agent({ refreshKey, onChanged, onGoInbox }: { refreshKey: number
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
-            <PenLine className="h-4 w-4 text-teal-500" /> Borradores del agente ({drafts.length})
+            <PenLine className="h-4 w-4 text-chart-2" /> Borradores del asistente ({drafts.length})
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {drafts.length === 0 && (
-            <p className="text-sm text-slate-400 py-4 text-center">
-              No hay borradores pendientes. El agente redacta respuestas para tus leads según su temperatura.
+            <p className="text-sm text-muted-foreground py-4 text-center">
+              No hay borradores pendientes. El asistente redacta respuestas según la temperatura de cada contacto.
             </p>
           )}
           {drafts.map((m) => (
@@ -272,16 +279,16 @@ export function Agent({ refreshKey, onChanged, onGoInbox }: { refreshKey: number
               <div className="flex flex-wrap items-center gap-2">
                 {m.temperature && <Badge className={`${TEMP_BADGE[m.temperature]} hover:${TEMP_BADGE[m.temperature]}`}>{TEMP_LABEL[m.temperature] || m.temperature}</Badge>}
                 <span className="text-sm font-medium truncate">{m.from}</span>
-                <span className="text-xs text-slate-400 truncate">{m.subject}</span>
+                <span className="text-xs text-muted-foreground truncate">{m.subject}</span>
               </div>
-              {m.aiSummary && <p className="text-xs text-slate-500">{m.aiSummary}</p>}
+              {m.aiSummary && <p className="text-xs text-muted-foreground">{m.aiSummary}</p>}
               <textarea
-                className="w-full rounded-md border bg-slate-50 p-3 text-sm min-h-24 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                className="w-full rounded-md border bg-muted p-3 text-sm min-h-24 focus:outline-none focus:ring-2 focus:ring-ring/30"
                 value={editedDraft[m.id] ?? m.aiReply ?? ''}
                 onChange={(e) => setEditedDraft({ ...editedDraft, [m.id]: e.target.value })}
               />
               <div className="flex justify-end">
-                <Button size="sm" onClick={() => approveDraft(m.id)} disabled={sending === m.id} className="bg-emerald-600 hover:bg-emerald-700">
+                <Button size="sm" onClick={() => approveDraft(m.id)} disabled={sending === m.id}>
                   {sending === m.id ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Send className="h-3.5 w-3.5 mr-1" />}
                   Enviar respuesta
                 </Button>
@@ -295,12 +302,12 @@ export function Agent({ refreshKey, onChanged, onGoInbox }: { refreshKey: number
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
-            <Eye className="h-4 w-4 text-slate-500" /> Decisiones y alertas del agente
+            <Eye className="h-4 w-4 text-muted-foreground" /> Decisiones y alertas
           </CardTitle>
         </CardHeader>
         <CardContent className="max-h-96 space-y-1 overflow-y-auto">
-          {events.length === 0 && <p className="text-sm text-slate-400 py-4 text-center">Sin eventos todavía. Pulsa «Ejecutar ciclo».</p>}
-          <ul className="divide-y divide-slate-100">
+          {events.length === 0 && <p className="text-sm text-muted-foreground py-4 text-center">Sin eventos todavía. Pulsa «Ejecutar ciclo».</p>}
+          <ul className="divide-y">
             {events.map((ev) => {
               const style = EVENT_LEVEL_STYLE[ev.level] || EVENT_LEVEL_STYLE.INFO
               return (
@@ -310,7 +317,7 @@ export function Agent({ refreshKey, onChanged, onGoInbox }: { refreshKey: number
                   </Badge>
                   <div className="min-w-0 flex-1">
                     <p className="leading-snug">{ev.message}</p>
-                    <p className="text-[11px] text-slate-400">{new Date(ev.createdAt).toLocaleString('es', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
+                    <p className="text-[11px] text-muted-foreground">{new Date(ev.createdAt).toLocaleString('es', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
                   </div>
                 </li>
               )
@@ -324,12 +331,12 @@ export function Agent({ refreshKey, onChanged, onGoInbox }: { refreshKey: number
 
 function MiniStat({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
   return (
-    <div className="rounded-lg border bg-slate-50/60 p-3">
-      <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-500">
+    <div className="rounded-lg border bg-muted/50 p-3">
+      <div className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
         {icon}
         {label}
       </div>
-      <p className="mt-1 text-xl font-bold text-slate-800 tabular-nums">{value}</p>
+      <p className="mt-1 text-xl font-bold text-foreground tabular-nums">{value}</p>
     </div>
   )
 }

@@ -61,7 +61,7 @@ export function Campaigns({ refreshKey, onChanged }: { refreshKey: number; onCha
         <p className="text-sm text-slate-500">Las campañas envían rotando entre buzones verificados y respetando el tope diario total.</p>
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-emerald-600 hover:bg-emerald-700">
+            <Button className="">
               <Plus className="h-4 w-4 mr-1" /> Nueva campaña
             </Button>
           </DialogTrigger>
@@ -112,7 +112,7 @@ export function Campaigns({ refreshKey, onChanged }: { refreshKey: number; onCha
                       <Pause className="h-3.5 w-3.5 mr-1" /> Pausar
                     </Button>
                   ) : (
-                    <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => setStatus(c, 'RUNNING')}>
+                    <Button size="sm" className="" onClick={() => setStatus(c, 'RUNNING')}>
                       <Play className="h-3.5 w-3.5 mr-1" /> {c.status === 'PAUSED' ? 'Reanudar' : 'Iniciar'}
                     </Button>
                   )}
@@ -171,7 +171,7 @@ function EnrollButton({ campaignId, count, onDone }: { campaignId: string; count
           <p className="text-sm text-slate-500">
             Se rotarán automáticamente entre los buzones verificados. Los leads en estado Nuevo o En campaña son elegibles; los respondidos, rebotados o dados de baja se omiten.
           </p>
-          <Button disabled={loading} className="w-full bg-emerald-600 hover:bg-emerald-700" onClick={() => enroll(true)}>
+          <Button disabled={loading} className="w-full" onClick={() => enroll(true)}>
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <MailCheck className="h-4 w-4 mr-1" />} Inscribir todos los leads elegibles
           </Button>
         </div>
@@ -260,7 +260,7 @@ function CreateDialog({ onDone }: { onDone: () => void }) {
           <Plus className="h-4 w-4 mr-1" /> Añadir follow-up
         </Button>
 
-        <Button onClick={submit} disabled={loading || !name || !fromName || !steps[0]?.subject || !steps[0]?.body} className="w-full bg-emerald-600 hover:bg-emerald-700">
+        <Button onClick={submit} disabled={loading || !name || !fromName || !steps[0]?.subject || !steps[0]?.body} className="w-full">
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Crear campaña'}
         </Button>
       </div>

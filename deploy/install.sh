@@ -58,10 +58,17 @@ cd "$DIR"
 
 # ── 3) .env ──────────────────────────────────────────────────
 if [ ! -f .env ]; then
-  yellow "→ Generando .env inicial…"
+  yellow "→ Generando .env con claves de cifrado…"
+  ENC_KEY=$(openssl rand -hex 32 2>/dev/null || head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n')
+  APP_SEC=$(openssl rand -hex 32 2>/dev/null || head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n')
   cat > .env <<ENV
-# ═══ ALICE — variables del ecosistema ═══
+# ═══ AliceMail v4 — variables del ecosistema ═══
 DATABASE_URL=file:/app/db/custom.db
+
+# Cifrado AES-256-GCM de contraseñas y tokens (NO perder ni cambiar)
+APP_ENCRYPTION_KEY=${ENC_KEY}
+# Firma de cookies de sesión
+APP_SECRET=${APP_SEC}
 
 # Puente GitHub ↔ VM (obligatorio para el dashboard y la consola web)
 # Crea un token fine-grained con permiso Contents: Read/Write SOLO sobre alice-data
@@ -70,7 +77,8 @@ GH_DATA_REPO=eddyflores100-lang/alice-data
 GH_SYNC_BRANCH=main
 GH_SYNC_MASK_EMAILS=true
 ENV
-  green "✓ .env creado — edítalo con tu GH_SYNC_TOKEN"
+  green "✓ .env creado con APP_ENCRYPTION_KEY y APP_SECRET generados"
+  yellow "  → Añade tu GH_SYNC_TOKEN:  nano $DIR/.env"
 else
   green "✓ .env ya existe (no se toca)"
 fi
@@ -92,22 +100,22 @@ fi
 # ── 6) Salud ─────────────────────────────────────────────────
 yellow "→ Esperando al motor…"
 for i in $(seq 1 40); do
-  if curl -fsS http://127.0.0.1:3000/api/stats >/dev/null 2>&1; then
+  if curl -fsS http://127.0.0.1:3000/api/auth/session >/dev/null 2>&1; then
     break
   fi
   sleep 3
 done
 
-if curl -fsS http://127.0.0.1:3000/api/stats >/dev/null 2>&1; then
+if curl -fsS http://127.0.0.1:3000/api/auth/session >/dev/null 2>&1; then
   green ""
   green "════════════════════════════════════════════════════"
-  green "  ✓ ALICE está VIVO en la VM"
+  green "  ✓ AliceMail v4 está VIVO en la VM"
   green "════════════════════════════════════════════════════"
   echo "
   Panel local:   ssh -L 3000:localhost:3000 alicelabs-free  → http://localhost:3000
+  1er paso:      abre el panel y CREA TU CONTRASEÑA de administrador
   Dashboard web: https://eddyflores100-lang.github.io/alicemail/
-  Siguiente paso: edita .env (GH_SYNC_TOKEN) y reinicia:
-    $COMPOSE up -d
+  Publicar:      docs/ALICELABS-SPACE.md (Cloudflare Tunnel → app.alicelabs.space)
   Logs:            $COMPOSE logs -f alicemail
   Actualizar:      cd $DIR && git pull && $COMPOSE up -d --build
 "

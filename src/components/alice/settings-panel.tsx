@@ -1,6 +1,6 @@
 'use client'
 
-// Pestaña Ajustes: motor on/off, ventana horaria, dominio de tracking, firma + guía DNS
+// Página Configuración: motor de envío, ventana horaria, firma, seguridad y guía DNS
 import { useCallback, useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, Zap, ShieldCheck } from 'lucide-react'
+import { Loader2, Zap, ShieldCheck, KeyRound } from 'lucide-react'
 import { api, SettingsDTO } from './types'
 import { toast } from 'sonner'
 
@@ -28,7 +28,16 @@ export function SettingsPanel({ refreshKey }: { refreshKey: number }) {
     if (!s) return
     setSaving(true)
     try {
-      const updated = await api<SettingsDTO>('/api/settings', { method: 'PATCH', body: JSON.stringify(s) })
+      const updated = await api<SettingsDTO>('/api/settings', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          workerEnabled: s.workerEnabled,
+          windowStart: s.windowStart,
+          windowEnd: s.windowEnd,
+          dailyCapGlobal: s.dailyCapGlobal,
+          signature: s.signature,
+        }),
+      })
       setS(updated)
       toast.success('Ajustes guardados')
     } catch (e) {
@@ -42,7 +51,7 @@ export function SettingsPanel({ refreshKey }: { refreshKey: number }) {
     setTickResult('ejecutando…')
     try {
       const r = await api<{ ok: boolean; reason?: string }>('/api/worker/tick', { method: 'POST' })
-      setTickResult(r.ok ? `✓ ${r.reason || 'ciclo completado'}` : `— ${r.reason || 'sin cambios'}`)
+      setTickResult(r.ok ? `Ciclo completado: ${r.reason || 'sin cambios'}` : `Sin cambios: ${r.reason || ''}`)
     } catch {
       setTickResult('error al ejecutar')
     }
@@ -50,7 +59,7 @@ export function SettingsPanel({ refreshKey }: { refreshKey: number }) {
 
   if (!s) {
     return (
-      <div className="flex justify-center py-16 text-slate-400">
+      <div className="flex justify-center py-16 text-muted-foreground">
         <Loader2 className="h-6 w-6 animate-spin" />
       </div>
     )
@@ -61,14 +70,14 @@ export function SettingsPanel({ refreshKey }: { refreshKey: number }) {
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
-            <Zap className="h-4 w-4 text-amber-500" /> Motor de envío
+            <Zap className="h-4 w-4 text-primary" /> Motor de envío
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between rounded-lg border p-3">
             <div>
               <p className="text-sm font-medium">Motor activo</p>
-              <p className="text-xs text-slate-400">Ciclo automático cada 45 s, IMAP cada ~5 min</p>
+              <p className="text-xs text-muted-foreground">Ciclo automático cada 45 s, IMAP cada ~5 min</p>
             </div>
             <Switch checked={s.workerEnabled} onCheckedChange={(v) => setS({ ...s, workerEnabled: v })} />
           </div>
@@ -92,63 +101,109 @@ export function SettingsPanel({ refreshKey }: { refreshKey: number }) {
               onChange={(e) => setS({ ...s, dailyCapGlobal: parseInt(e.target.value || '200', 10) })}
               className="w-36"
             />
-            <p className="text-xs text-slate-400">
-              Techo diario de toda la plataforma (se ve en el Panel como «correos que puedes enviar hoy»). Con 10 buzones de Gmail gratis a 20/día quedaría en 200.
+            <p className="text-xs text-muted-foreground">
+              Techo diario de toda la plataforma. Con 10 buzones de Gmail gratis a 20/día quedaría en 200.
             </p>
           </div>
-          <p className="text-xs text-slate-400">Los envíos solo ocurren dentro de la ventana horaria (simula horario humano y protege la reputación).</p>
-          <div className="space-y-1.5">
-            <Label>URL pública de tracking (opcional)</Label>
-            <Input value={s.trackingUrl} onChange={(e) => setS({ ...s, trackingUrl: e.target.value })} placeholder="https://mail.techdigital.site" />
-          </div>
-          <p className="text-xs text-slate-400">Si expones AliceMail con dominio propio, ponlo aquí para activar píxel de apertura y links de baja funcionales.</p>
+          <p className="text-xs text-muted-foreground">Los envíos solo ocurren dentro de la ventana horaria (simula horario humano y protege la reputación).</p>
           <div className="space-y-1.5">
             <Label>Firma (se añade al final de cada correo de campaña)</Label>
             <Textarea rows={3} value={s.signature} onChange={(e) => setS({ ...s, signature: e.target.value })} placeholder={'María Pérez\nTechDigital · Data Specialist'} />
           </div>
           <div className="flex gap-2">
-            <Button onClick={save} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700">
+            <Button onClick={save} disabled={saving}>
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Guardar ajustes'}
             </Button>
             <Button variant="outline" onClick={forceTick}>
               Forzar ciclo ahora
             </Button>
           </div>
-          {tickResult && <p className="text-xs text-slate-500">{tickResult}</p>}
+          {tickResult && <p className="text-xs text-muted-foreground">{tickResult}</p>}
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2">
-            <ShieldCheck className="h-4 w-4 text-emerald-600" /> Entregabilidad — checklist DNS
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3 text-sm text-slate-600">
-          <p>Para cada dominio de envío configura en Cloudflare antes de conectar buzones:</p>
-          <ul className="space-y-2">
-            <DnsItem record="SPF" desc="v=spf1 incluye el proveedor del buzón (p.ej. include:_spf.google.com) y tu SMTP propio" />
-            <DnsItem record="DKIM" desc="CNAME/TXT que te da tu proveedor (Google Admin → Generar DKIM; M365 → portal Defender)" />
-            <DnsItem record="DMARC" desc="_dmarc TXT: v=DMARC1; p=none; rua=mailto:tu@dominio (sube a p=quarantine cuando tengas histórico)" />
-            <DnsItem record="MX/Tracking" desc="Si usas tracking con subdominio, un registro A/CNAME hacia esta VM" />
-          </ul>
-          <div className="rounded-lg bg-slate-50 p-3 text-xs text-slate-500 space-y-1">
-            <p className="font-medium text-slate-600">Reglas de oro del sistema:</p>
-            <p>· Cada buzón arranca en warmup: 3/día, +2 diarios, techo 25.</p>
-            <p>· Con campaña activa el warmup baja a 5/día (protege reputación).</p>
-            <p>· Un rebote detectado penaliza el buzón −25% durante 48 h.</p>
-            <p>· 3 errores SMTP seguidos marcan el buzón en ERROR hasta que lo verifiques de nuevo.</p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        <SecurityCard />
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4 text-chart-2" /> Entregabilidad — checklist DNS
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm text-muted-foreground">
+            <p>Para cada dominio de envío configura en Cloudflare antes de conectar buzones:</p>
+            <ul className="space-y-2">
+              <DnsItem record="SPF" desc="v=spf1 incluye el proveedor del buzón (p.ej. include:_spf.google.com) y tu SMTP propio" />
+              <DnsItem record="DKIM" desc="CNAME/TXT que te da tu proveedor (Google Admin → Generar DKIM; M365 → portal Defender)" />
+              <DnsItem record="DMARC" desc="_dmarc TXT: v=DMARC1; p=none; rua=mailto:tu@dominio (sube a p=quarantine cuando tengas histórico)" />
+              <DnsItem record="Tracking" desc="Subdominio mail.alicelabs.space apuntando por túnel — ver sección Conexión" />
+            </ul>
+            <div className="rounded-lg bg-muted p-3 text-xs text-muted-foreground space-y-1">
+              <p className="font-medium text-foreground">Reglas del sistema:</p>
+              <p>· Cada buzón arranca en warmup: 3/día, +2 diarios, techo 25.</p>
+              <p>· Con campaña activa el warmup baja a 5/día (protege reputación).</p>
+              <p>· Un rebote detectado penaliza el buzón −25% durante 48 h.</p>
+              <p>· 3 errores SMTP seguidos marcan el buzón en ERROR hasta que lo verifiques de nuevo.</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
+  )
+}
+
+function SecurityCard() {
+  const [current, setCurrent] = useState('')
+  const [next, setNext] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  const change = async () => {
+    setSaving(true)
+    try {
+      await api('/api/auth/password', { method: 'PATCH', body: JSON.stringify({ current, next }) })
+      toast.success('Contraseña actualizada')
+      setCurrent('')
+      setNext('')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Error')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base flex items-center gap-2">
+          <KeyRound className="h-4 w-4 text-primary" /> Seguridad del acceso
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <p className="text-xs text-muted-foreground">
+          Única credencial de acceso a la plataforma (se guarda con scrypt, nunca en claro). Los datos sensibles de
+          buzones y notificaciones viajan cifrados con AES-256-GCM.
+        </p>
+        <div className="space-y-1.5">
+          <Label>Contraseña actual</Label>
+          <Input type="password" value={current} onChange={(e) => setCurrent(e.target.value)} autoComplete="current-password" />
+        </div>
+        <div className="space-y-1.5">
+          <Label>Nueva contraseña</Label>
+          <Input type="password" value={next} onChange={(e) => setNext(e.target.value)} placeholder="Mínimo 8 caracteres" autoComplete="new-password" />
+        </div>
+        <Button onClick={change} disabled={saving || !current || next.length < 8}>
+          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Actualizar contraseña'}
+        </Button>
+      </CardContent>
+    </Card>
   )
 }
 
 function DnsItem({ record, desc }: { record: string; desc: string }) {
   return (
     <li className="flex gap-2">
-      <Badge variant="outline" className="shrink-0 border-emerald-300 text-emerald-700 mt-0.5">
+      <Badge variant="outline" className="shrink-0 mt-0.5 text-[10px]">
         {record}
       </Badge>
       <span className="text-xs leading-relaxed">{desc}</span>

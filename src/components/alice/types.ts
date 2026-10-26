@@ -106,7 +106,7 @@ export const STAGE_BADGE: Record<string, string> = {
   CONTACTADO: 'bg-violet-100 text-violet-700 border-violet-200',
   CALIENTE: 'bg-rose-100 text-rose-700 border-rose-200',
   TIBIO: 'bg-amber-100 text-amber-800 border-amber-200',
-  FRIO: 'bg-sky-100 text-sky-800 border-sky-200',
+  FRIO: 'bg-teal-100 text-teal-800 border-teal-200',
   RECHAZADO: 'bg-zinc-200 text-zinc-600 border-zinc-300',
   RECUPERADO: 'bg-emerald-100 text-emerald-700 border-emerald-200',
 }
@@ -116,7 +116,7 @@ export const STAGE_DOT: Record<string, string> = {
   CONTACTADO: 'bg-violet-500',
   CALIENTE: 'bg-rose-500',
   TIBIO: 'bg-amber-500',
-  FRIO: 'bg-sky-500',
+  FRIO: "bg-teal-500",
   RECHAZADO: 'bg-zinc-500',
   RECUPERADO: 'bg-emerald-500',
 }
@@ -131,12 +131,6 @@ export const RULE_TRIGGER_LABEL: Record<string, string> = {
   OPENS_NO_REPLY: 'Abre N veces sin responder',
   COLD_DAYS: 'Lleva N días frío',
   NO_OPEN: 'No abre en N días',
-}
-
-export const RULE_ACTION_ICON: Record<string, string> = {
-  RESEND: '🔁',
-  CHANGE_ANGLE: '🧭',
-  NEW_PROMO: '🎯',
 }
 
 export interface CampaignDTO {
@@ -232,23 +226,24 @@ export interface SettingsDTO {
   workerEnabled: boolean
   windowStart: number
   windowEnd: number
+  appUrl: string
   trackingUrl: string
   signature: string
   dailyCapGlobal: number
   agentEnabled: boolean
   agentAutonomy: string
   notifyChannel: string
-  notifyTelegramToken: string
+  hasTelegramToken: boolean
   notifyTelegramChat: string
   notifyWaPhoneId: string
-  notifyWaToken: string
+  hasWaToken: boolean
   notifyWaTo: string
   notifyEvents: string
   dailyReportHour: number
   aiApiUrl: string
-  aiApiKey: string
+  hasAiApiKey: boolean
   aiModel: string
-  mcpToken: string
+  hasMcpToken: boolean
 }
 
 export interface AgentEventDTO {
@@ -266,7 +261,7 @@ export interface AgentDTO {
     agentAutonomy: string
     dailyReportHour: number
     aiApiUrl: string
-    aiApiKey: string
+    hasAiApiKey: boolean
     aiModel: string
   }
   stats: {
@@ -358,7 +353,7 @@ export const TEMP_LABEL: Record<string, string> = {
 export const TEMP_BADGE: Record<string, string> = {
   HOT: 'bg-rose-100 text-rose-700',
   WARM: 'bg-amber-100 text-amber-800',
-  COLD: 'bg-sky-100 text-sky-800',
+  COLD: 'bg-teal-100 text-teal-800',
   OOO: 'bg-slate-100 text-slate-600',
 }
 

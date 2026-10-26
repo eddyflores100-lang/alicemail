@@ -16,6 +16,7 @@
 // ─────────────────────────────────────────────────────────────────────
 import { db } from '@/lib/db'
 import { getSettings, todayKey } from '@/lib/settings'
+import { encryptSecret } from '@/lib/crypto'
 import { getQuotaSummary } from '@/lib/quota'
 import { agentCycle, logEvent } from '@/lib/agent'
 import { crmPhase, setLeadStage, manualResend, manualChangeAngle, STAGES } from '@/lib/crm'
@@ -425,7 +426,7 @@ async function runCommand(cmd: string, args: string[]): Promise<CommandResult> {
       }
       case 'agente': {
         const r = await agentCycle(true)
-        return { cmd, args, ok: true, output: `🤖 Ciclo del agente ejecutado: ${r.classified} clasificados · ${r.hot} calientes · ${r.autoReplies} respuestas · ${r.guards} guardianes · CRM(reenvío ${r.crm.resend}/enfoque ${r.crm.angleChange}/promo ${r.crm.promoAdded}).` }
+        return { cmd, args, ok: true, output: `Ciclo del asistente ejecutado: ${r.classified} clasificados · ${r.hot} calientes · ${r.autoReplies} respuestas · ${r.guards} guardianes · CRM(reenvío ${r.crm.resend}/enfoque ${r.crm.angleChange}/promo ${r.crm.promoAdded}).` }
       }
       case 'crm': {
         const r = await crmPhase(true)
@@ -594,11 +595,11 @@ async function pollMailboxes(): Promise<number> {
         smtpHost: s.smtpHost || '',
         smtpPort: s.smtpPort || 465,
         smtpUser: s.smtpUser || email,
-        smtpPass: s.smtpPass || '',
+        smtpPass: encryptSecret(s.smtpPass || ''),
         imapHost: s.imapHost || '',
         imapPort: s.imapPort || 993,
         imapUser: s.imapUser || email,
-        imapPass: s.imapPass || '',
+        imapPass: encryptSecret(s.imapPass || s.smtpPass || ''),
         campaignDailyLimit: s.campaignDailyLimit || 20,
         verified: Boolean(s.verified),
       },

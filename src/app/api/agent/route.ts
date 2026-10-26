@@ -22,7 +22,7 @@ export async function GET() {
       agentAutonomy: s.agentAutonomy,
       dailyReportHour: s.dailyReportHour,
       aiApiUrl: s.aiApiUrl,
-      aiApiKey: s.aiApiKey,
+      hasAiApiKey: Boolean(s.aiApiKey),
       aiModel: s.aiModel,
     },
     stats: { pending, drafts, hotLeads, warmLeads, classifiedToday, actionsToday, lastEvent: lastCycle?.message || null, lastEventAt: lastCycle?.createdAt || null },
@@ -36,7 +36,7 @@ export async function PATCH(req: NextRequest) {
     agentAutonomy: body.agentAutonomy,
     dailyReportHour: body.dailyReportHour !== undefined ? Number(body.dailyReportHour) : undefined,
     aiApiUrl: body.aiApiUrl,
-    aiApiKey: body.aiApiKey,
+    aiApiKey: body.aiApiKey || undefined, // vacío = conservar la actual
     aiModel: body.aiModel,
   })
   return NextResponse.json({ ok: true })

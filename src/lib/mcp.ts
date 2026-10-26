@@ -6,6 +6,7 @@
 // ─────────────────────────────────────────────────────────────────────
 import { db } from '@/lib/db'
 import { getSettings, ensureMcpToken } from '@/lib/settings'
+import { safeEqual } from '@/lib/crypto'
 import { getQuotaSummary } from '@/lib/quota'
 import { agentCycle, sendAgentReply, logEvent } from '@/lib/agent'
 import { classifyReply } from '@/lib/ai'
@@ -143,11 +144,13 @@ const TOOLS: ToolDef[] = [
   },
 ]
 
-/** Punto de entrada JSON-RPC 2.0 */
+/** Punto de entrada JSON-RPC 2.0 — TODO método exige token válido */
 export async function handleMcpRpc(body: JsonRpcRequest, tokenOk: boolean): Promise<Record<string, unknown>> {
   const { id, method, params } = body
   const result = (fn: () => Promise<unknown> | unknown) =>
     Promise.resolve(fn()).then((r) => ({ jsonrpc: '2.0', id, result: r as object }))
+
+  if (!tokenOk) return err(id, -32001, 'Token MCP inválido o ausente')
 
   if (method === 'initialize') {
     return {
@@ -381,13 +384,36 @@ function clampInt(v: unknown, min: number, max: number, fallback: number): numbe
   return Math.min(max, Math.max(min, n))
 }
 
+/** Límite simple en memoria: 120 llamadas por IP y minuto */
+const mcpCalls = new Map<string, { n: number; reset: number }>()
+
+function mcpRateLimited(ip: string): boolean {
+  const now = Date.now()
+  const c = mcpCalls.get(ip)
+  if (!c || c.reset < now) {
+    mcpCalls.set(ip, { n: 1, reset: now + 60_000 })
+    return false
+  }
+  c.n += 1
+  return c.n > 120
+}
+
 /** Verifica el token de la petición (Bearer header o query param) */
-export async function verifyMcpToken(req: Request): Promise<{ ok: boolean; token: string }> {
+export async function verifyMcpToken(
+  req: Request
+): Promise<{ ok: boolean; token: string; limited: boolean }> {
+  const ip =
+    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    req.headers.get('x-real-ip') ||
+    'local'
+  if (mcpRateLimited(ip)) return { ok: false, token: '', limited: true }
   const url = new URL(req.url)
   const provided =
     req.headers.get('authorization')?.replace(/^Bearer\s+/i, '') || url.searchParams.get('token') || ''
   const token = await ensureMcpToken()
-  return { ok: provided === token, token }
+  // Comparación en tiempo constante (evita filtrado por temporización)
+  const ok = provided.length > 0 && safeEqual(provided, token)
+  return { ok, token, limited: false }
 }
 
 export async function mcpServerInfo(): Promise<{ endpoint: string; token: string; tools: ToolDef[] }> {

@@ -41,7 +41,7 @@ export function Mailboxes({ refreshKey, onChanged }: { refreshKey: number; onCha
     setTesting(mb.id)
     try {
       const r = await api<{ ok: boolean; smtp: boolean; imap: boolean; error?: string }>(`/api/mailboxes/${mb.id}/test`, { method: 'POST' })
-      if (r.ok) toast.success(`✓ ${mb.email} verificado (SMTP + IMAP)`)
+      if (r.ok) toast.success(`${mb.email} verificado (SMTP + IMAP)`)
       else toast.error(r.error || 'Fallo de conexión', { description: r.smtp ? 'IMAP falló' : 'SMTP falló — revisa credenciales' })
       load()
       onChanged()
@@ -80,7 +80,7 @@ export function Mailboxes({ refreshKey, onChanged }: { refreshKey: number; onCha
         </p>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-emerald-600 hover:bg-emerald-700">
+            <Button className="">
               <Plus className="h-4 w-4 mr-1" /> Añadir buzón
             </Button>
           </DialogTrigger>
@@ -125,13 +125,13 @@ export function Mailboxes({ refreshKey, onChanged }: { refreshKey: number; onCha
                       <div className="text-xs text-slate-400">
                         {PROVIDERS.find((p) => p.value === mb.provider)?.label || mb.provider}
                       </div>
-                      {mb.lastError && <div className="text-xs text-red-500 truncate max-w-56 mt-0.5" title={mb.lastError}>⚠ {mb.lastError}</div>}
+                      {mb.lastError && <div className="text-xs text-red-500 truncate max-w-56 mt-0.5" title={mb.lastError}>{mb.lastError}</div>}
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col gap-1 items-start">
                         <Badge className={`${MB_STATUS_COLOR[mb.status]} hover:${MB_STATUS_COLOR[mb.status]}`}>{MB_STATUS_LABEL[mb.status] || mb.status}</Badge>
                         {mb.verified ? (
-                          <span className="text-xs text-emerald-600">✓ verificado</span>
+                          <span className="text-xs text-chart-2">verificado</span>
                         ) : (
                           <span className="text-xs text-amber-600">sin verificar</span>
                         )}
@@ -294,9 +294,12 @@ function AddMailboxDialog({ onCreated }: { onCreated: () => void }) {
           </div>
         </div>
 
-        <Button onClick={submit} disabled={saving || !form.email || !form.displayName || !form.smtpPass} className="w-full bg-emerald-600 hover:bg-emerald-700">
+        <Button onClick={submit} disabled={saving || !form.email || !form.displayName || !form.smtpPass} className="w-full">
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Crear buzón'}
         </Button>
+        <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+          La contraseña se cifra con AES-256-GCM antes de guardarse; nunca vuelve a mostrarse.
+        </p>
       </div>
     </DialogContent>
   )
